@@ -16,42 +16,14 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 from common.log_out import log_err
 from dbs.pipelines import MongoPipeline
+from main import chrome
 from spiders.download import command_thread, format_img_url, serverUrl
 
 requests.packages.urllib3.disable_warnings()
 pp = pprint.PrettyPrinter(indent=4)
-
-
-def chrome(link):
-    chrome_options = Options()
-    # 去除webdriver和自动测试提示,增加无头
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option('useAutomationExtension', False)
-    chromedriver = webdriver.Chrome(options=chrome_options,
-                                    executable_path=r"C:\Users\65769\AppData\Local\Programs\Python\Python38\chromedriver")
-    chromedriver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": """
-                            Object.defineProperty(navigator, 'webdriver', {
-                              get: () => undefined
-                            })
-                          """
-    })
-    chromedriver.get(link)
-    time.sleep(1)
-    html = chromedriver.page_source
-    return chromedriver, html
 
 
 # 请求列表
@@ -93,6 +65,7 @@ def product_detail(product_info):
 # 解析详细内容
 def parse_detail(product_info, html):
     if product_info['domain'] == 'detail.1688.com':
+        driver = chrome()
         try:
             try:
                 pro_td = {}
@@ -110,10 +83,11 @@ def parse_detail(product_info, html):
                 pro_td = None
 
             try:
-                driver, html = chrome(product_info['pro_link'])
+                driver.get(product_info['pro_link'])
+                time.sleep(1)
+                html = driver.page_source
                 soup = BeautifulSoup(html, 'lxml')
                 pro_detail_html = soup.find('div', {'class': 'content-detail'})
-                driver.close()
             except:
                 pro_detail_html = None
 
@@ -161,8 +135,7 @@ def parse_detail(product_info, html):
                 pro_images_front = None
                 pro_images_back = None
             finally:
-                pro_detail_html = pro_detail_html.replace('\n', "").replace('\t', "").replace('\r', "").replace('\"',
-                                                                                                                "'")
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
 
             _data = {
                 'pro_link': product_info['pro_link'],
@@ -174,6 +147,7 @@ def parse_detail(product_info, html):
             }
             MongoPipeline('products').update_item({'pro_link': None}, _data)
             shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
-
         except Exception as error:
             log_err(error)
+        finally:
+            driver.close()

@@ -7,6 +7,7 @@
 @file: main.py
 @time: 2022/4/21 14:17
 """
+import time
 
 import requests
 
@@ -62,6 +63,32 @@ from spiders.product_detail import product_detail
 from spiders.product_list import product_list
 import re
 import subprocess
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+
+def chrome():
+    chrome_options = Options()
+    # 去除webdriver和自动测试提示,增加无头
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    chromedriver = webdriver.Chrome(options=chrome_options,
+                                    executable_path=r"C:\Users\65769\AppData\Local\Programs\Python\Python38\chromedriver")
+    chromedriver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+                            Object.defineProperty(navigator, 'webdriver', {
+                              get: () => undefined
+                            })
+                          """
+    })
+    return chromedriver
 
 
 def kill_chromedriver():
@@ -151,17 +178,16 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    company_dict = {
-        '机构简称': '巷口塑胶',
-        '企业类型': '制品厂',
-        '企业动态': '',
-        '产品链接': 'https://zzxksj.1688.com/page/offerlist.htm?spm=a2615.2177701.wp_pc_common_topnav_38229151.0'
-    }
-    product_list(company_dict)
+    # company_dict = {
+    #     '机构简称': '巷口塑胶',
+    #     '企业类型': '制品厂',
+    #     '企业动态': '',
+    #     '产品链接': 'https://zzxksj.1688.com/page/offerlist.htm?spm=a2615.2177701.wp_pc_common_topnav_38229151.0'
+    # }
+    # product_list(company_dict)
 
+    for pro_info in MongoPipeline('products').find({'status': None}):
+        product_detail(pro_info)
+        break
 
-    # for pro_info in MongoPipeline('products').find({'status': None}):
-    #     product_detail(pro_info)
-    #     kill_chromedriver()
-    #     # break
-
+    kill_chromedriver()
