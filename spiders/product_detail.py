@@ -19,11 +19,36 @@ from bs4 import BeautifulSoup
 
 from common.log_out import log_err
 from dbs.pipelines import MongoPipeline
-from main import chrome
 from spiders.download import command_thread, format_img_url, serverUrl
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 requests.packages.urllib3.disable_warnings()
 pp = pprint.PrettyPrinter(indent=4)
+
+
+def chrome():
+    chrome_options = Options()
+    # 去除webdriver和自动测试提示,增加无头
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    chromedriver = webdriver.Chrome(options=chrome_options,
+                                    executable_path=r"C:\Users\65769\AppData\Local\Programs\Python\Python38\chromedriver")
+    chromedriver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+                            Object.defineProperty(navigator, 'webdriver', {
+                              get: () => undefined
+                            })
+                          """
+    })
+    return chromedriver
 
 
 # 请求列表
@@ -161,22 +186,12 @@ def parse_detail(product_info, html):
     if product_info['domain'] == 'www.zzmushroom.com':
         try:
             try:
-                pro_td = {}
-                info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
-                if info:
-                    for key, value in json.loads(info[0]).get('data').items():
-                        if value.get('componentType') == '@ali/tdmod-od-pc-attribute-new':
-                            for msg in value.get('data'):
-                                name = msg.get('name')
-                                value = msg.get('values')
-                                if isinstance(value, list):
-                                    value = ' | '.join(value)
-                                pro_td.update({name: value})
+                pro_td = ''
             except:
                 pro_td = None
 
             try:
-                pro_detail_html = soup.find('div', {'class': 'content-detail'})
+                pro_detail_html = str(soup.find('div', {'class': 'productDetail'}))
             except:
                 pro_detail_html = None
 
@@ -185,26 +200,22 @@ def parse_detail(product_info, html):
                 pro_images_front = []
                 pro_images_back = []
 
-                info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
-                if info:
-                    for key, value in json.loads(info[0]).get('data').items():
-                        if value.get('componentType') == '@ali/tdmod-od-gyp-pc-main-pic':
-                            for img_url in value.get('data').get('offerImgList'):
-                                new_img_url = format_img_url(product_info, img_url)
-                                if not new_img_url: continue
-                                if new_img_url and new_img_url not in pro_images_front:
-                                    replace_list.append(img_url)
-                                    pro_images_front.append(new_img_url)
+                for img in soup.find('div', {'class': 'content'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
 
                 # 替换非产品图片
-                not_pro_pic_list = [img.get('src') for img in pro_detail_html.find_all('img')]
-                if not_pro_pic_list:
-                    for img_url in not_pro_pic_list:
-                        new_img_url = format_img_url(product_info, img_url)
-                        if not new_img_url: continue
-                        if new_img_url and new_img_url not in pro_images_front:
-                            replace_list.append(img_url)
-                            pro_images_front.append(new_img_url)
+                for img in soup.find('div', {'class': 'productDetail'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
 
                 if pro_images_front:
                     command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
@@ -234,6 +245,7 @@ def parse_detail(product_info, html):
                 'pro_images_back': pro_images_back,
                 'status': 1
             }
+            # print(_data)
             MongoPipeline('products').update_item({'pro_link': None}, _data)
             shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
         except Exception as error:
