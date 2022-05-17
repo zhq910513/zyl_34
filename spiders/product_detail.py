@@ -340,3 +340,370 @@ def parse_detail(product_info, html):
             shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
         except Exception as error:
             log_err(error)
+    if product_info['domain'] == 'www.youyitape.com':
+        try:
+            try:
+                pro_yy = soup.find('div', {'class': 'view-nav'}).find_all('a')[-1].get_text().strip()
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = soup.find('div', {'class': 'detail-t1'}).get_text().replace('\n', '').replace('\t', '').replace('\r', '').strip()
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = str(soup.find('div', {'class': 'detail_title2 mhide'}))
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                for img in soup.find('div', {'class': 'img-dv'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 替换非产品图片
+                for img in soup.find('div', {'class': 'detail_title2 mhide'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)
+    if product_info['domain'] == 'www.tjhybz.com':
+        try:
+            try:
+                pro_yy = soup.find('div', {'class': 'neititle'}).find('h2').get_text().strip()
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = ''
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = str(soup.find('div', {'class': 'content'}))
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                for img in soup.find('div', {'class': 'main_right fr'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 替换非产品图片
+                for img in soup.find('div', {'class': 'content'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)
+    if product_info['domain'] == "www.guanyipipe.com":pass
+    if product_info['domain'] == 'www.minqiao.com.cn':
+        try:
+            try:
+                pro_yy = soup.find('span', {'class': 'hidden-xs link'}).find_all('a')[-1].get_text().strip()
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = ''
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = str(soup.find('div', {'class': 'info-content'}))
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                for img in soup.find('div', {'class': 'info-pic'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 替换非产品图片
+                for img in soup.find('div', {'class': 'info-content'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)
+    if product_info['domain'] == "www.ruihua650.com":pass
+    if product_info['domain'] == 'www.innovapack.com.cn':
+        try:
+            try:
+                pro_yy = '-'.join(soup.find('div', {'class': 'w-crumbs'}).get_text().strip().replace('\n', '').replace('\xa0', '').replace('首页ꄲ', '').split('ꄲ'))
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = ''
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = ''
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                for img in soup.find_all('img', {'class': 'CutFill'}):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)
+    if product_info['domain'] == 'www.st-gh.com':
+        try:
+            try:
+                pro_yy = ''
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = []
+                for p in soup.find('div', {'class': 'reset_style js-reset_style js-adapMobile'}).find_all('p')[1:]:
+                    if p.get_text():
+                        pro_td.append(p.get_text().replace('\n', '').replace('\t', '').replace('\r', '').strip())
+                if pro_td:
+                    pro_td = ' '.join(pro_td).strip()
+                else:
+                    pro_td = ''
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = str(soup.find('div', {'class': 'reset_style js-reset_style js-adapMobile'}).find('p', {'style': 'text-align: center;'}))
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                imgs = re.findall('"srcBigPic":"(.*?)"', html, re.S)
+                if imgs:
+                    for img_url in imgs:
+                        new_img_url = format_img_url(product_info, img_url)
+                        if not new_img_url: continue
+                        if new_img_url and new_img_url not in pro_images_front:
+                            replace_list.append(img_url)
+                            pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)

@@ -152,14 +152,15 @@ def parse_all_category_2(company_info, html):
 
 if __name__ == "__main__":
     # company_dict = {
-    #     '机构简称': '芗城新辉',
+    #     '机构全称': '汕头冠华薄膜工业有限公司',
+    #     '机构简称': '冠华薄膜',
     #     '企业类型': '制品厂',
-    #     '企业动态': 'http://www.fjxhsj.com/?c=index&a=cate&classid=10',
-    #     '产品链接': 'http://www.fjxhsj.com/?c=index&a=cate&classid=3&page=1'
+    #     '企业动态': 'http://www.st-gh.com/news.html',
+    #     '产品链接': 'http://www.st-gh.com/products.html'
     # }
     # product_list(company_dict)
 
-    for pro_info in MongoPipeline('products').find({'status': None, 'domain': 'www.fjxhsj.com'}):
+    for pro_info in MongoPipeline('products').find({'status': None, "domain" : "www.fjxhsj.com"}):
         product_detail(pro_info)
         # break
 
