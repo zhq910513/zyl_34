@@ -51,14 +51,15 @@ def parse_list(company_info, html):
                 pro_name = item.get('subject')
                 pro_link = f"https://detail.1688.com/offer/{item.get('id')}.html"
                 pro_data = {
+                    'pro_link': pro_link,
+                    'domain': domain,
                     '机构简称': company_info['机构简称'],
                     '企业类型': company_info['企业类型'],
                     '企业动态': company_info.get('企业动态'),
                     '产品链接': company_info['产品链接'],
-                    'domain': 'detail.1688.com',
-                    'pro_name': pro_name,
-                    'pro_link': pro_link
+                    '产品名称': pro_name
                 }
+                # print(pro_data)
                 MongoPipeline('products').update_item({'pro_link': None}, pro_data)
         if domain == "www.zzmushroom.com":
             try:
@@ -68,13 +69,13 @@ def parse_list(company_info, html):
                     if str(pro_link).startswith('pro'):
                         pro_link = 'http://www.zzmushroom.com/' + pro_link
                     pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
                         '机构简称': company_info['机构简称'],
                         '企业类型': company_info['企业类型'],
                         '企业动态': company_info.get('企业动态'),
                         '产品链接': company_info['产品链接'],
-                        'domain': domain,
-                        'pro_name': pro_name,
-                        'pro_link': pro_link
+                        '产品名称': pro_name
                     }
                     # print(pro_data)
                     MongoPipeline('products').update_item({'pro_link': None}, pro_data)
@@ -84,6 +85,35 @@ def parse_list(company_info, html):
             try:
                 current_page = int(company_info['产品链接'].split('page=')[1])
                 if int(current_page) < 7:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page+1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.fjxhsj.com":
+            try:
+                for item in soup.find('div', {'class': 'home_pro'}).find_all('li'):
+                    pro_name = item.find('a').get('title').strip()
+                    pro_link = item.find('a').get('href')
+                    if str(pro_link).startswith('/'):
+                        pro_link = 'http://www.fjxhsj.com' + pro_link
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('page=')[1])
+                if int(current_page) < 25:
                     link = company_info['产品链接']
                     company_info['产品链接'] = link.split('page=')[0] + f'page={current_page+1}'
                     return product_list(company_info)

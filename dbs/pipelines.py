@@ -67,6 +67,15 @@ class MongoPipeline:
             except Exception as error:
                 log_err(error)
 
+    def unset_item(self, query, item):
+        if not item: return
+        if isinstance(item, dict):
+            try:
+                self.coll.update_one(query, {'$unset': item}, upsert=True)
+                print(item)
+            except Exception as error:
+                log_err(error)
+
     def find(self, query):
         return self.coll.find(query)
 

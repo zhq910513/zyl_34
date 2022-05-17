@@ -99,6 +99,11 @@ def parse_detail(product_info, html):
         driver = chrome()
         try:
             try:
+                pro_yy = ''
+            except:
+                pro_yy = None
+
+            try:
                 pro_td = {}
                 info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
                 if info:
@@ -127,6 +132,7 @@ def parse_detail(product_info, html):
                 pro_images_front = []
                 pro_images_back = []
 
+                # 产品图
                 info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
                 if info:
                     for key, value in json.loads(info[0]).get('data').items():
@@ -148,6 +154,7 @@ def parse_detail(product_info, html):
                             replace_list.append(img_url)
                             pro_images_front.append(new_img_url)
 
+                # 下载
                 if pro_images_front:
                     command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
 
@@ -170,8 +177,9 @@ def parse_detail(product_info, html):
 
             _data = {
                 'pro_link': product_info['pro_link'],
-                'pro_td': pro_td,
-                'pro_detail_html': pro_detail_html,
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
                 'pro_images_front': pro_images_front,
                 'pro_images_back': pro_images_back,
                 'status': 1
@@ -182,9 +190,13 @@ def parse_detail(product_info, html):
             log_err(error)
         finally:
             driver.close()
-
     if product_info['domain'] == 'www.zzmushroom.com':
         try:
+            try:
+                pro_yy = ''
+            except:
+                pro_yy = None
+
             try:
                 pro_td = ''
             except:
@@ -200,6 +212,7 @@ def parse_detail(product_info, html):
                 pro_images_front = []
                 pro_images_back = []
 
+                # 产品图
                 for img in soup.find('div', {'class': 'content'}).find_all('img'):
                     img_url = img.get('src')
                     new_img_url = format_img_url(product_info, img_url)
@@ -217,6 +230,7 @@ def parse_detail(product_info, html):
                         replace_list.append(img_url)
                         pro_images_front.append(new_img_url)
 
+                # 下载
                 if pro_images_front:
                     command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
 
@@ -239,13 +253,89 @@ def parse_detail(product_info, html):
 
             _data = {
                 'pro_link': product_info['pro_link'],
-                'pro_td': pro_td,
-                'pro_detail_html': pro_detail_html,
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
                 'pro_images_front': pro_images_front,
                 'pro_images_back': pro_images_back,
                 'status': 1
             }
             # print(_data)
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)
+    if product_info['domain'] == 'www.fjxhsj.com':
+        try:
+            try:
+                pro_yy = soup.find('ol', {'class': 'am-breadcrumb am-breadcrumb-slash am-animation-slide-top am-animation-delay-1'}).find_all('li')[2].get_text()
+            except:
+                pro_yy = None
+
+            try:
+                pro_td = ''
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = str(soup.find('div', {'class': 'pro_intro am-animation-slide-bottom am-animation-delay-2'}).find('div', {'id': 'con_one_1'}))
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                # 产品图
+                for img in soup.find('div', {'class': 'pro_show am-animation-slide-bottom am-animation-delay-1'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 替换非产品图片
+                for img in soup.find('div', {'class': 'pro_intro am-animation-slide-bottom am-animation-delay-2'}).find('div', {'id': 'con_one_1'}).find_all('img'):
+                    img_url = img.get('src')
+                    new_img_url = format_img_url(product_info, img_url)
+                    if not new_img_url: continue
+                    if new_img_url and new_img_url not in pro_images_front:
+                        replace_list.append(img_url)
+                        pro_images_front.append(new_img_url)
+
+                # 下载
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                '产品特点': pro_td,
+                '产品详情': pro_detail_html,
+                '应用行业': pro_yy,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            # pp.pprint(_data)
             MongoPipeline('products').update_item({'pro_link': None}, _data)
             shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
         except Exception as error:

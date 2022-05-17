@@ -11,6 +11,8 @@
 import requests
 
 from common.log_out import log_err
+from dbs.pipelines import MongoPipeline
+from spiders.product_detail import product_detail
 from spiders.product_list import product_list
 
 requests.packages.urllib3.disable_warnings()
@@ -149,16 +151,16 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    company_dict = {
-        '机构简称': '天珍塑料',
-        '企业类型': '制品厂',
-        '企业动态': 'http://www.zzmushroom.com/news.asp',
-        '产品链接': 'http://www.zzmushroom.com/products.asp?cid=&q=&page=1'
-    }
-    product_list(company_dict)
+    # company_dict = {
+    #     '机构简称': '芗城新辉',
+    #     '企业类型': '制品厂',
+    #     '企业动态': 'http://www.fjxhsj.com/?c=index&a=cate&classid=10',
+    #     '产品链接': 'http://www.fjxhsj.com/?c=index&a=cate&classid=3&page=1'
+    # }
+    # product_list(company_dict)
 
-    # for pro_info in MongoPipeline('products').find({'status': None, 'domain': 'www.zzmushroom.com'}):
-    #     product_detail(pro_info)
-    # break
+    for pro_info in MongoPipeline('products').find({'status': None, 'domain': 'www.fjxhsj.com'}):
+        product_detail(pro_info)
+        # break
 
     # kill_chromedriver()
