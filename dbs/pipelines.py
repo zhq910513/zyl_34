@@ -55,6 +55,7 @@ class MongoPipeline:
             for _i in item:
                 try:
                     self.coll.update_one(self.field_query(query, _i), {'$set': _i}, upsert=True)
+                    print(_i)
                 except DuplicateKeyError:
                     pass
                 except Exception as error:
@@ -62,6 +63,7 @@ class MongoPipeline:
         elif isinstance(item, dict):
             try:
                 self.coll.update_one(self.field_query(query, item), {'$set': item}, upsert=True)
+                print(item)
             except Exception as error:
                 log_err(error)
 

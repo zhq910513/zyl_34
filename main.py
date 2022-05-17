@@ -7,16 +7,11 @@
 @file: main.py
 @time: 2022/4/21 14:17
 """
-import os
-import time
-from os import path
 
 import requests
 
 from common.log_out import log_err
 from dbs.pipelines import MongoPipeline
-from spiders.product_detail import parse_detail
-from spiders.product_list import parse_list
 
 requests.packages.urllib3.disable_warnings()
 
@@ -63,44 +58,21 @@ serverUrl = 'https://zuiyouliao-prod.oss-cn-beijing.aliyuncs.com/zx/image/'
 pic_info = {'id': 0, 'pic_type': 3}
 
 from bs4 import BeautifulSoup
+from spiders.product_detail import product_detail
+from spiders.product_list import product_list
+import re
+import subprocess
 
 
-# 请求列表
-def product_list(company_info):
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36'
-        }
-        resp = requests.get(company_info['company_url'], headers=headers, verify=False)
-        resp.encoding = 'gbk'
-        if resp.status_code == 200:
-            parse_list(company_info, resp.text)
-        else:
-            print(resp.status_code)
-    except Exception as error:
-        log_err(error)
-
-
-# 请求详细内容
-def product_detail(product_info):
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36'
-        }
-        print(product_info['pro_link'])
-        resp = requests.get(url=product_info['pro_link'], headers=headers, verify=False)
-        resp.encoding = 'gbk'
-        if resp.status_code == 200:
-            _data = parse_detail(product_info, resp.text)
-            # print(_data)
-            html_css = _data.get('pro_jscs_html')
-            if html_css:
-                html_css = html_css.replace('\"', "'")
-                html_css = html_css.replace('\n', "'").replace('\t', "'").replace('\r', "'")
-                _data['pro_jscs_html'] = html_css
-            MongoPipeline('products').update_item({'pro_link': None, 'pro_name': None}, _data)
-    except Exception as error:
-        log_err(error)
+def kill_chromedriver():
+    cmd = 'tasklist -v'
+    info = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    for txt in str(info.stdout.read()).split('\\r\\n'):
+        if 'chromedriver.exe' in txt or 'chrome.exe' in txt:
+            pid_list = re.findall(' (\d+) Console ', txt, re.S)
+            if pid_list:
+                cmd = "taskkill -f -pid {}".format(pid_list[0])
+                subprocess.Popen(cmd, shell=True)
 
 
 # 获取所有分类
@@ -117,6 +89,7 @@ def get_all_category(company_info):
             print(resp.status_code)
     except Exception as error:
         log_err(error)
+
 
 # 解析所有分类
 def parse_all_category(company_info, html):
@@ -153,6 +126,7 @@ def get_all_category_2(company_info):
     except Exception as error:
         log_err(error)
 
+
 # 解析所有分类
 def parse_all_category_2(company_info, html):
     url_list = []
@@ -177,32 +151,17 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    ci = {
-        'company_name': '昆山恒诚荣机械设备有限公司',
-        'company_url': 'http://www.kshrjx.com/product.asp'
+    company_dict = {
+        '机构简称': '巷口塑胶',
+        '企业类型': '制品厂',
+        '企业动态': '',
+        '产品链接': 'https://zzxksj.1688.com/page/offerlist.htm?spm=a2615.2177701.wp_pc_common_topnav_38229151.0'
     }
-    # product_list(ci)
+    product_list(company_dict)
 
-    # urls_1 = get_all_category(ci)
-    # for url_info in urls_1:
-    #     print(url_info)
-    #     product_list(url_info)
-    #     break
-    #     urls_2 = get_all_category_2(url_info)
-    #     print(urls_2)
-    #     for url_info_2 in urls_2:
-    #         print(url_info_2['cate_2_name'])
-    #         # print(url_info_2)
-    #         product_list(url_info_2)
-    #         # break
+
+    # for pro_info in MongoPipeline('products').find({'status': None}):
+    #     product_detail(pro_info)
+    #     kill_chromedriver()
     #     # break
 
-    while 1:
-        try:
-            for pi in MongoPipeline("products").find({'pro_jscs_html': None}):
-                product_detail(pi)
-                # break
-        except:
-            pass
-
-        time.sleep(60)
