@@ -29,7 +29,8 @@ pp = pprint.PrettyPrinter(indent=4)
 # 请求列表
 def product_detail(product_info):
     try:
-        headers = {
+        if product_info['domain'] == 'detail.1688.com':
+            headers = {
             'authority': 'detail.1688.com',
             'method': 'GET',
             'path': '/offer/648047141570.html',
@@ -50,6 +51,10 @@ def product_detail(product_info):
             'upgrade-insecure-requests': '1',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36'
         }
+        else:
+            headers = {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36'
+            }
         print(product_info['pro_link'])
         resp = requests.get(product_info['pro_link'], headers=headers, verify=False)
 
@@ -64,6 +69,7 @@ def product_detail(product_info):
 
 # 解析详细内容
 def parse_detail(product_info, html):
+    soup = BeautifulSoup(html, 'lxml')
     if product_info['domain'] == 'detail.1688.com':
         driver = chrome()
         try:
@@ -86,8 +92,8 @@ def parse_detail(product_info, html):
                 driver.get(product_info['pro_link'])
                 time.sleep(1)
                 html = driver.page_source
-                soup = BeautifulSoup(html, 'lxml')
-                pro_detail_html = soup.find('div', {'class': 'content-detail'})
+                chrome_soup = BeautifulSoup(html, 'lxml')
+                pro_detail_html = chrome_soup.find('div', {'class': 'content-detail'})
             except:
                 pro_detail_html = None
 
@@ -151,3 +157,84 @@ def parse_detail(product_info, html):
             log_err(error)
         finally:
             driver.close()
+
+    if product_info['domain'] == 'www.zzmushroom.com':
+        try:
+            try:
+                pro_td = {}
+                info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
+                if info:
+                    for key, value in json.loads(info[0]).get('data').items():
+                        if value.get('componentType') == '@ali/tdmod-od-pc-attribute-new':
+                            for msg in value.get('data'):
+                                name = msg.get('name')
+                                value = msg.get('values')
+                                if isinstance(value, list):
+                                    value = ' | '.join(value)
+                                pro_td.update({name: value})
+            except:
+                pro_td = None
+
+            try:
+                pro_detail_html = soup.find('div', {'class': 'content-detail'})
+            except:
+                pro_detail_html = None
+
+            try:
+                replace_list = []
+                pro_images_front = []
+                pro_images_back = []
+
+                info = re.findall('window.__INIT_DATA=(.*?)\n?  ?</script>', str(html), re.S)
+                if info:
+                    for key, value in json.loads(info[0]).get('data').items():
+                        if value.get('componentType') == '@ali/tdmod-od-gyp-pc-main-pic':
+                            for img_url in value.get('data').get('offerImgList'):
+                                new_img_url = format_img_url(product_info, img_url)
+                                if not new_img_url: continue
+                                if new_img_url and new_img_url not in pro_images_front:
+                                    replace_list.append(img_url)
+                                    pro_images_front.append(new_img_url)
+
+                # 替换非产品图片
+                not_pro_pic_list = [img.get('src') for img in pro_detail_html.find_all('img')]
+                if not_pro_pic_list:
+                    for img_url in not_pro_pic_list:
+                        new_img_url = format_img_url(product_info, img_url)
+                        if not new_img_url: continue
+                        if new_img_url and new_img_url not in pro_images_front:
+                            replace_list.append(img_url)
+                            pro_images_front.append(new_img_url)
+
+                if pro_images_front:
+                    command_thread(product_info['机构简称'], list(set(pro_images_front)), Async=True)
+
+                # 替换产品图片
+                if pro_detail_html and replace_list:
+                    for img_url in replace_list:
+                        if 'zuiyouliao' in img_url: continue
+                        encode_img_url = format_img_url(product_info, img_url)
+                        if not encode_img_url: continue
+
+                        hash_key = hashlib.md5(encode_img_url.encode("utf8")).hexdigest()
+                        new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                        pro_images_back.append(new_img_url)
+                        pro_detail_html = str(pro_detail_html).replace(img_url, new_img_url)
+            except:
+                pro_images_front = None
+                pro_images_back = None
+            finally:
+                pro_detail_html = pro_detail_html.replace('\n',"").replace('\t',"").replace('\r',"").replace('\"',"'")
+
+            _data = {
+                'pro_link': product_info['pro_link'],
+                'pro_td': pro_td,
+                'pro_detail_html': pro_detail_html,
+                'pro_images_front': pro_images_front,
+                'pro_images_back': pro_images_back,
+                'status': 1
+            }
+            MongoPipeline('products').update_item({'pro_link': None}, _data)
+            shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
+        except Exception as error:
+            log_err(error)

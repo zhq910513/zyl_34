@@ -59,7 +59,7 @@ serverUrl = 'https://zuiyouliao-prod.oss-cn-beijing.aliyuncs.com/zx/image/'
 pic_info = {'id': 0, 'pic_type': 3}
 
 from bs4 import BeautifulSoup
-from spiders.product_detail import product_detail
+# from spiders.product_detail import product_detail
 from spiders.product_list import product_list
 import re
 import subprocess
@@ -178,16 +178,16 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    # company_dict = {
-    #     '机构简称': '巷口塑胶',
-    #     '企业类型': '制品厂',
-    #     '企业动态': '',
-    #     '产品链接': 'https://zzxksj.1688.com/page/offerlist.htm?spm=a2615.2177701.wp_pc_common_topnav_38229151.0'
-    # }
-    # product_list(company_dict)
+    company_dict = {
+        '机构简称': '天珍塑料',
+        '企业类型': '制品厂',
+        '企业动态': 'http://www.zzmushroom.com/news.asp',
+        '产品链接': 'http://www.zzmushroom.com/products.asp?cid=&q=&page=1'
+    }
+    product_list(company_dict)
 
-    for pro_info in MongoPipeline('products').find({'status': None}):
-        product_detail(pro_info)
-        break
+    # for pro_info in MongoPipeline('products').find({'status': None}):
+    #     product_detail(pro_info)
+    #     break
 
-    kill_chromedriver()
+    # kill_chromedriver()
