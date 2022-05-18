@@ -10,6 +10,7 @@
 import hashlib
 import json
 import shutil
+import time
 from urllib.parse import urlparse,urlencode
 
 import requests
@@ -17,7 +18,7 @@ from bs4 import BeautifulSoup
 
 from common.log_out import log_err
 from dbs.pipelines import MongoPipeline
-from spiders.download import command_thread, serverUrl
+from spiders.download import command_thread, serverUrl, format_img_url
 
 requests.packages.urllib3.disable_warnings()
 
@@ -408,5 +409,166 @@ def parse_list(company_info, html):
                     return product_list(company_info)
             except:
                 pass
+        if domain == "www.fjxl.com":
+            try:
+                for item in soup.find('ul', {'class': 'xypg-product-list clearfix'}).find_all('li'):
+                    pro_name = item.find_all('a')[0].get('title').strip()
+                    pro_link = item.find_all('a')[0].get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('/gcgjb94/p')[1].split('.')[0])
+                if int(current_page) < 8:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('/gcgjb94/p')[0] + f'/gcgjb94/p{current_page+1}.html'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.fzlvfan.com":
+            try:
+                for item in soup.find('div', {'class': 'ysfllist_list'}).find_all('li'):
+                    pro_name = item.find_all('a')[-1].get_text().strip()
+                    pro_link = 'http://www.fzlvfan.com/' + item.find_all('a')[-1].get('href')
+
+                    try:
+                        replace_list = []
+                        pro_images_front = []
+                        pro_images_back = []
+
+                        # 产品图
+                        img_url = item.find('img').get('src')
+                        new_img_url = 'http://www.fzlvfan.com/' + img_url
+                        if not new_img_url: continue
+                        if new_img_url and new_img_url not in pro_images_front:
+                            replace_list.append(img_url)
+                            pro_images_front.append(new_img_url)
+
+                            hash_key = hashlib.md5(new_img_url.encode("utf8")).hexdigest()
+                            new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                            pro_images_back.append(new_img_url)
+
+                        # 下载
+                        if pro_images_front:
+                            command_thread(company_info['机构简称'], list(set(pro_images_front)))
+
+                    except:
+                        pro_images_front = None
+                        pro_images_back = None
+
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name,
+                        'pro_images_front': pro_images_front,
+                        'pro_images_back': pro_images_back
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.amesonpak.com":
+            try:
+                for item in soup.find('ul', {'class': 'pro-ul clear'}).find_all('li'):
+                    pro_name = item.find('h3').get_text().strip()
+                    pro_link = 'http://www.amesonpak.com/' + item.find('a').get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('?page=')[1])
+                if int(current_page) < 6:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page+1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.atontech.com.cn":
+            try:
+                for item in soup.find('div', {'class': 'pro_img'}).find_all('a'):
+                    pro_name = item.find('h1').get_text().strip()
+                    pro_link = 'http://www.atontech.com.cn' + item.get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('?page=')[1])
+                if int(current_page) < 6:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page+1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.kaidapack.com":
+            try:
+                for item in soup.find('ul', {'class': 'product-list clearfix'}).find_all('li'):
+                    pro_images_front = []
+                    pro_name = item.find('h5').get_text().strip()
+                    pro_link = 'http://www.kaidapack.com' + item.find('img').get('src')
+                    pro_images_front.append(pro_link)
+                    hash_key = hashlib.md5(pro_link.encode("utf8")).hexdigest()
+                    new_img_url = serverUrl + hash_key + '.jpg'
+                    command_thread(company_info['机构简称'], pro_images_front)
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name,
+                        '产品特点': None,
+                        '产品详情': None,
+                        '应用行业': company_info['pro_yy'],
+                        'pro_images_front': [pro_link],
+                        'pro_images_back': [new_img_url],
+                        'status': 1
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
     except Exception as error:
         log_err(error)
