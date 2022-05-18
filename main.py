@@ -7,6 +7,7 @@
 @file: main.py
 @time: 2022/4/21 14:17
 """
+import time
 
 import requests
 
@@ -159,9 +160,10 @@ if __name__ == "__main__":
     #     '产品链接': 'http://www.st-gh.com/products.html'
     # }
     # product_list(company_dict)
+    while True:
+        for pro_info in MongoPipeline('products').find({'status': None, "domain" : "detail.1688.com"}):
+            product_detail(pro_info)
+            break
 
-    for pro_info in MongoPipeline('products').find({'status': None, "domain" : "www.fjxhsj.com"}):
-        product_detail(pro_info)
-        # break
-
-    # kill_chromedriver()
+        kill_chromedriver()
+        time.sleep(5)

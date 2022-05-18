@@ -99,7 +99,7 @@ def parse_detail(product_info, html):
         driver = chrome()
         try:
             try:
-                pro_yy = ''
+                pro_yy = None
             except:
                 pro_yy = None
 
@@ -193,12 +193,12 @@ def parse_detail(product_info, html):
     if product_info['domain'] == 'www.zzmushroom.com':
         try:
             try:
-                pro_yy = ''
+                pro_yy = None
             except:
                 pro_yy = None
 
             try:
-                pro_td = ''
+                pro_td = None
             except:
                 pro_td = None
 
@@ -273,7 +273,7 @@ def parse_detail(product_info, html):
                 pro_yy = None
 
             try:
-                pro_td = ''
+                pro_td = None
             except:
                 pro_td = None
 
@@ -423,7 +423,7 @@ def parse_detail(product_info, html):
                 pro_yy = None
 
             try:
-                pro_td = ''
+                pro_td = None
             except:
                 pro_td = None
 
@@ -499,7 +499,7 @@ def parse_detail(product_info, html):
                 pro_yy = None
 
             try:
-                pro_td = ''
+                pro_td = None
             except:
                 pro_td = None
 
@@ -575,12 +575,12 @@ def parse_detail(product_info, html):
                 pro_yy = None
 
             try:
-                pro_td = ''
+                pro_td = None
             except:
                 pro_td = None
 
             try:
-                pro_detail_html = ''
+                pro_detail_html = None
             except:
                 pro_detail_html = None
 
@@ -636,7 +636,7 @@ def parse_detail(product_info, html):
     if product_info['domain'] == 'www.st-gh.com':
         try:
             try:
-                pro_yy = ''
+                pro_yy = None
             except:
                 pro_yy = None
 
@@ -648,7 +648,7 @@ def parse_detail(product_info, html):
                 if pro_td:
                     pro_td = ' '.join(pro_td).strip()
                 else:
-                    pro_td = ''
+                    pro_td = None
             except:
                 pro_td = None
 

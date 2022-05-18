@@ -195,7 +195,7 @@ def parse_list(company_info, html):
                             pro_name = None
 
                         try:
-                            pro_yy = ''
+                            pro_yy = None
                         except:
                             pro_yy = None
 
@@ -209,7 +209,7 @@ def parse_list(company_info, html):
                             if pro_td:
                                 pro_td = '\n'.join(pro_td)
                             else:
-                                pro_td = ''
+                                pro_td = None
                         except:
                             pro_td = None
 
