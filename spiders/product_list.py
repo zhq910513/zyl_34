@@ -10,15 +10,14 @@
 import hashlib
 import json
 import shutil
-import time
-from urllib.parse import urlparse,urlencode
+from urllib.parse import urlparse, urlencode
 
 import requests
 from bs4 import BeautifulSoup
 
 from common.log_out import log_err
 from dbs.pipelines import MongoPipeline
-from spiders.download import command_thread, serverUrl, format_img_url
+from spiders.download import command_thread, serverUrl
 
 requests.packages.urllib3.disable_warnings()
 
@@ -28,6 +27,33 @@ def product_list(company_info):
     try:
         if 'zzxksj.1688.com' in company_info['产品链接']:
             parse_list(company_info, '')
+        elif 'www.fzghxc.com' in company_info['产品链接']:
+            headers = {
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Connection': 'keep-alive',
+                'Content-Length': '85',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Cookie': 'JSESSIONID=FDFA1C164837D1F999CE4666EFEF8F1C; sajssdk_2015_cross_ZQSensorsObjnew_user=1; sensorsdata2015jssdkcrossZQSensorsObj=%7B%22distinct_id%22%3A%22180dd3c72393e5-058b45bdd71fd0c-14333270-1382400-180dd3c723ad53%22%2C%22first_id%22%3A%22%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_landing_page%22%3A%22http%3A%2F%2Fwww.fzghxc.com%2Fproduct%2F7%2F%22%7D%2C%22%24device_id%22%3A%22180dd3c72393e5-058b45bdd71fd0c-14333270-1382400-180dd3c723ad53%22%7D',
+                'Host': 'www.fzghxc.com',
+                'Origin': 'http://www.fzghxc.com',
+                'Referer': 'http://www.fzghxc.com/product/5/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+            data = {
+                'compId': 'product_list-1542878678071',
+                'productCateId': '5',
+                'xibcommonId': '5',
+                'highlightCategoryId': '5'
+            }
+            resp = requests.post(company_info['产品链接'], headers=headers, data=urlencode(data), verify=False)
+            resp.encoding = 'utf-8'
+            if resp.status_code == 200:
+                parse_list(company_info, resp.text)
+            else:
+                print(resp.status_code)
         else:
             headers = {
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36'
@@ -35,6 +61,7 @@ def product_list(company_info):
             resp = requests.get(company_info['产品链接'], headers=headers, verify=False)
             resp.encoding = 'utf-8'
             if resp.status_code == 200:
+                print(resp.url)
                 parse_list(company_info, resp.text)
             else:
                 print(resp.status_code)
@@ -50,7 +77,7 @@ def parse_list(company_info, html):
 
     try:
         if domain == "zzxksj.1688.com":
-            jsonData = json.load(open(f'D:\Projects\dev\zyl_34\spiders\data.json','r',encoding="utf-8"))
+            jsonData = json.load(open(f'D:\Projects\dev\zyl_34\spiders\data.json', 'r', encoding="utf-8"))
             for item in jsonData.get('data').get('content').get('offerList'):
                 pro_name = item.get('subject')
                 pro_link = f"https://detail.1688.com/offer/{item.get('id')}.html"
@@ -90,7 +117,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('page=')[1])
                 if int(current_page) < 7:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page+1}'
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -119,7 +146,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('page=')[1])
                 if int(current_page) < 25:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page+1}'
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -147,7 +174,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('page=')[1])
                 if int(current_page) < 4:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page+1}'
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -177,7 +204,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('/p/')[1].split('.')[0])
                 if int(current_page) < 7:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page+1}.html'
+                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
@@ -204,8 +231,9 @@ def parse_list(company_info, html):
                             pro_td = []
                             for num, p in enumerate(item.find_all('p')):
                                 if '产品特点' in str(p):
-                                    for n_p in item.find_all('p')[num+1:]:
-                                        pro_td.append(n_p.get_text().replace('\n', '').replace('\t', '').replace('\r', '').strip())
+                                    for n_p in item.find_all('p')[num + 1:]:
+                                        pro_td.append(n_p.get_text().replace('\n', '').replace('\t', '').replace('\r',
+                                                                                                                 '').strip())
                                     break
                             if pro_td:
                                 pro_td = '\n'.join(pro_td)
@@ -217,7 +245,8 @@ def parse_list(company_info, html):
                         try:
                             pro_detail_html = str(item.find('em'))
                             if '产品简介' in str(item.find_all('p')[0]):
-                                pro_detail_html = pro_detail_html + str(item.find_all('p')[0]) + str(item.find_all('p')[1])
+                                pro_detail_html = pro_detail_html + str(item.find_all('p')[0]) + str(
+                                    item.find_all('p')[1])
                         except:
                             pro_detail_html = None
 
@@ -308,13 +337,14 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('_108_')[1].split('.')[0])
                 if int(current_page) < 4:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('_108_')[0] + f'_108_{current_page+1}.html'
+                    company_info['产品链接'] = link.split('_108_')[0] + f'_108_{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
         if domain == "www.ruihua650.com":
             try:
-                for item in soup.find('ul', {'class': 'photo_display_area jz_scroll'}).find_all('a', {'class': 'list_photo_wrapper'}):
+                for item in soup.find('ul', {'class': 'photo_display_area jz_scroll'}).find_all('a', {
+                    'class': 'list_photo_wrapper'}):
                     pro_name = item.find('span').get_text().strip()
                     pro_link = item.find('div', {'class': 'photo_item'}).get('src-original')
 
@@ -345,7 +375,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('_108_')[1].split('.')[0])
                 if int(current_page) < 4:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('_108_')[0] + f'_108_{current_page+1}.html'
+                    company_info['产品链接'] = link.split('_108_')[0] + f'_108_{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
@@ -375,15 +405,17 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('/p/')[1].split('.')[0])
                 if int(current_page) < 7:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page+1}.html'
+                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
         if domain == "www.st-gh.com":
             try:
-                for item in soup.find('div', {'class': 'e_box e_box-000 p_products'}).find_all('div', {'class': 'e_box e_ProductBox-001 p_Product'}):
+                for item in soup.find('div', {'class': 'e_box e_box-000 p_products'}).find_all('div', {
+                    'class': 'e_box e_ProductBox-001 p_Product'}):
                     pro_name = item.find('div', {'class': 'font'}).get_text().strip()
-                    pro_link = item.find('h3', {'class': 'e_title e_ImgTitle-001 d_title p_title_1 js-protitle'}).get('data-url')
+                    pro_link = item.find('h3', {'class': 'e_title e_ImgTitle-001 d_title p_title_1 js-protitle'}).get(
+                        'data-url')
                     if str(pro_link).startswith('/'):
                         pro_link = 'http://www.st-gh.com' + pro_link
                     pro_data = {
@@ -405,7 +437,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('/p/')[1].split('.')[0])
                 if int(current_page) < 7:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page+1}.html'
+                    company_info['产品链接'] = link.split('/p/')[0] + f'/p/{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
@@ -433,7 +465,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('/gcgjb94/p')[1].split('.')[0])
                 if int(current_page) < 8:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('/gcgjb94/p')[0] + f'/gcgjb94/p{current_page+1}.html'
+                    company_info['产品链接'] = link.split('/gcgjb94/p')[0] + f'/gcgjb94/p{current_page + 1}.html'
                     return product_list(company_info)
             except:
                 pass
@@ -508,7 +540,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('?page=')[1])
                 if int(current_page) < 6:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page+1}'
+                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -536,7 +568,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('?page=')[1])
                 if int(current_page) < 6:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page+1}'
+                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -564,6 +596,113 @@ def parse_list(company_info, html):
                         '应用行业': company_info['pro_yy'],
                         'pro_images_front': [pro_link],
                         'pro_images_back': [new_img_url],
+                        'status': 1
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.fjzhongya.com":
+            try:
+                for item in soup.find('div', {'class': 'p_p_list'}).find_all('a'):
+                    pro_name = item.get('title').strip()
+                    pro_link = item.get('href')
+                    if str(pro_link).startswith('/'):
+                        pro_link = 'http://www.fjzhongya.com' + pro_link
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('?page=')[1].split('.')[0])
+                if int(current_page) < 14:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('?page=')[0] + f'?page={current_page + 1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.fzghxc.com":
+            try:
+                for num, item in enumerate(soup.find_all('div', {'class': 'e_box p_Product product'})):
+                    pro_name = item.find('div', {'class': 'name'}).get_text().strip()
+                    pro_link = item.find('a').get('href')
+                    if str(pro_link).startswith('/'):
+                        pro_link = 'http://www.fzghxc.com' + pro_link
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('&currentPage=')[1])
+                if int(current_page) < 5:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('&currentPage=')[0] + f'&currentPage={current_page+1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "xm-devon.com":
+            try:
+                for item in soup.find_all('div', {'fatherid': 'layerDB58C9E78DF3936C3B7EDBC121B9BD27'}):
+                    pro_images_front = []
+                    pro_images_back = []
+                    pro_name = item.find('div', {'class': 'wp-title_content'}).get_text().strip()
+                    pro_link = item.find('a', {'class': 'btnarea button_btndefault-link'}).get('href')
+                    img_url = item.find('img').get('src')
+                    pro_images_front.append(img_url)
+
+                    hash_key = hashlib.md5(img_url.encode("utf8")).hexdigest()
+                    new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                    pro_images_back.append(new_img_url)
+
+                    if pro_link == 'javascript:;':
+                        pro_link = img_url
+
+                    pro_yy = item.find_all('div', {'class': 'wp-title_content'})[0].get_text()
+
+                    pro_td = item.find_all('div', {'class': 'wp-title_content'})[2].get_text()
+
+                    pro_detail_html = str(item.find_all('div', {'class': 'wp-title_content'})[1])
+
+                    # 下载
+                    if pro_images_front:
+                        command_thread(company_info['机构简称'], list(set(pro_images_front)))
+
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name,
+                        '产品特点': pro_td,
+                        '产品详情': pro_detail_html,
+                        '应用行业': pro_yy,
+                        'pro_images_front': pro_images_front,
+                        'pro_images_back': pro_images_back,
                         'status': 1
                     }
                     # print(pro_data)
