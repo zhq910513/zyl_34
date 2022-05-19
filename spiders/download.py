@@ -61,7 +61,7 @@ image_base_path = path.dirname(os.path.abspath(path.dirname(__file__)))
 
 # 下载/上传 图片/视频 函数
 def DownloadPicture_Video(img_path, img_url, retry=0):
-    if img_url and img_url.endswith('.jpg') or img_url.endswith('.png') or img_url.endswith('.pdf') or img_url.endswith('.wbep'):
+    if img_url and img_url.endswith('.jpg') or img_url.endswith('.png') or img_url.endswith('.JPG')  or img_url.endswith('.pdf') or img_url.endswith('.wbep'):
         try:
             res = requests.get(img_url, timeout=60)
             if res.status_code == 200:

@@ -152,18 +152,17 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    # company_dict = {
-    #     '机构全称': '汕头冠华薄膜工业有限公司',
-    #     '机构简称': '冠华薄膜',
-    #     '企业类型': '制品厂',
-    #     '企业动态': 'http://www.st-gh.com/news.html',
-    #     '产品链接': 'http://www.st-gh.com/products.html'
-    # }
-    # product_list(company_dict)
-    while True:
-        for pro_info in MongoPipeline('products').find({'status': None, "domain" : "detail.1688.com"}):
-            product_detail(pro_info)
-            break
+    company_dict = {
+        '机构全称': '福建凯达集团有限公司',
+        '机构简称': '凯达集团',
+        '企业类型': '制品厂',
+        '企业动态': 'http://www.kaidapack.com/news.html',
+        '产品链接': 'http://www.kaidapack.com/products10i1.html',
+        'pro_yy': '创新包装'
+    }
+    product_list(company_dict)
 
-        kill_chromedriver()
-        time.sleep(5)
+    # for pro_info in MongoPipeline('products').find({"domain" : "www.atontech.com.cn"}):
+    #     product_detail(pro_info)
+        # break
+
