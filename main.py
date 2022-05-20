@@ -152,16 +152,16 @@ def parse_all_category_2(company_info, html):
 
 
 if __name__ == "__main__":
-    # company_dict = {
-    #     '机构全称': '厦门德丰行塑胶工业有限公司',
-    #     '机构简称': '德丰行',
-    #     '企业类型': '制品厂',
-    #     '企业动态': 'http://xm-devon.com/page126',
-    #     '产品链接': 'http://xm-devon.com/page127'
-    # }
-    # product_list(company_dict)
+    company_dict = {
+        '机构全称': '福建满山红新材料科技有限公司',
+        '机构简称': '满山红',
+        '企业类型': '制品厂',
+        '企业动态': 'http://www.zpwpw.cn/news.html',
+        '产品链接': 'http://www.zpwpw.cn/album.html?page=1'
+    }
+    product_list(company_dict)
 
-    for pro_info in MongoPipeline('products').find({'status': 1, "domain" : "xm-devon.com"}):
-        product_detail(pro_info)
+    # for pro_info in MongoPipeline('products').find({'status': None, "domain" : "www.fjzhongya.com"}):
+    #     product_detail(pro_info)
         # break
 

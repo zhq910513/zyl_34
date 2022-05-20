@@ -709,5 +709,33 @@ def parse_list(company_info, html):
                     MongoPipeline('products').update_item({'pro_link': None}, pro_data)
             except Exception as error:
                 log_err(error)
+        if domain == "www.zpwpw.cn":
+            try:
+                for item in soup.find_all('div', {'class': 'm-theme1-list'}):
+                    pro_name = item.find_all('a')[-1].get_text().strip()
+                    pro_link = 'http://www.zpwpw.cn' + item.find_all('a')[-1].get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    print(pro_data)
+                    # MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('page=')[1])
+                if int(current_page) < 4:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
+                    return product_list(company_info)
+            except:
+                pass
     except Exception as error:
         log_err(error)

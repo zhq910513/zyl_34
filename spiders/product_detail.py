@@ -966,6 +966,7 @@ def parse_detail(product_info, html):
             shutil.rmtree(f"D:/Projects/dev/zyl_34/download_data/{product_info['机构简称']}", True)
         except Exception as error:
             log_err(error)
+    if product_info['domain'] == "www.kaidapack.com":pass
     if product_info['domain'] == 'www.fjzhongya.com':
         try:
             try:
