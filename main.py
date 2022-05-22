@@ -153,15 +153,14 @@ def parse_all_category_2(company_info, html):
 
 if __name__ == "__main__":
     company_dict = {
-        '机构全称': '福建满山红新材料科技有限公司',
-        '机构简称': '满山红',
+        '机构全称': '厦门绿胜纸塑制品有限公司',
+        '机构简称': '绿胜纸塑',
         '企业类型': '制品厂',
-        '企业动态': 'http://www.zpwpw.cn/news.html',
-        '产品链接': 'http://www.zpwpw.cn/album.html?page=1'
+        '企业动态': '',
+        '产品链接': 'https://lvshengpapercup.1688.com/page/offerlist.htm?spm=a2615.2177701.wp_pc_common_topnav_38229151.0'
     }
     product_list(company_dict)
-
-    # for pro_info in MongoPipeline('products').find({'status': None, "domain" : "www.fjzhongya.com"}):
+    #
+    # for pro_info in MongoPipeline('products').find({'status': None, "domain" : "www.jjxingtai.com"}):
     #     product_detail(pro_info)
-        # break
-
+    #     break

@@ -27,6 +27,8 @@ def product_list(company_info):
     try:
         if 'zzxksj.1688.com' in company_info['产品链接']:
             parse_list(company_info, '')
+        elif 'lvshengpapercup.1688.com' in company_info['产品链接']:
+            parse_list(company_info, '')
         elif 'www.fzghxc.com' in company_info['产品链接']:
             headers = {
                 'Accept': '*/*',
@@ -49,6 +51,24 @@ def product_list(company_info):
                 'highlightCategoryId': '5'
             }
             resp = requests.post(company_info['产品链接'], headers=headers, data=urlencode(data), verify=False)
+            resp.encoding = 'utf-8'
+            if resp.status_code == 200:
+                parse_list(company_info, resp.text)
+            else:
+                print(resp.status_code)
+        elif 'www.dehanguan.com' in company_info['产品链接']:
+            headers = {
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Connection': 'keep-alive',
+                'Cookie': 'PHPSESSID=cs9t8nn7qesnb9hi5smkm46al6; s_l=zh_CN; s_u=0; wp_layer_content_layer9FDE695CAD19340370D92C773B05EAEC=%7B%22product_category_more%22%3A%225%2C7%2C8%2C6%2C9%2C10%2C11%2C16%2C12%2C13%2C14%22%7D; route=d8d964079d83d5929b7057b3c76d5bbd; wp_layer_page_layer9FDE695CAD19340370D92C773B05EAEC=2',
+                'Host': 'www.dehanguan.com',
+                'Referer': 'http://www.dehanguan.com/page53',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+            resp = requests.get(company_info['产品链接'], headers=headers, verify=False)
             resp.encoding = 'utf-8'
             if resp.status_code == 200:
                 parse_list(company_info, resp.text)
@@ -658,7 +678,7 @@ def parse_list(company_info, html):
                 current_page = int(company_info['产品链接'].split('&currentPage=')[1])
                 if int(current_page) < 5:
                     link = company_info['产品链接']
-                    company_info['产品链接'] = link.split('&currentPage=')[0] + f'&currentPage={current_page+1}'
+                    company_info['产品链接'] = link.split('&currentPage=')[0] + f'&currentPage={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
@@ -712,8 +732,60 @@ def parse_list(company_info, html):
         if domain == "www.zpwpw.cn":
             try:
                 for item in soup.find_all('div', {'class': 'm-theme1-list'}):
+                    pro_images_front = []
+                    pro_images_back = []
                     pro_name = item.find_all('a')[-1].get_text().strip()
                     pro_link = 'http://www.zpwpw.cn' + item.find_all('a')[-1].get('href')
+
+                    # 产品图
+                    for img in item.find_all('img'):
+                        img_url = img.get('data-original')
+                        if not img_url: continue
+                        if img_url and img_url not in pro_images_front:
+                            pro_images_front.append(img_url)
+
+                            hash_key = hashlib.md5(img_url.encode("utf8")).hexdigest()
+                            new_img_url = serverUrl + hash_key + '.' + img_url.split('.')[-1]
+                            pro_images_back.append(new_img_url)
+
+                    # 下载
+                    if pro_images_front:
+                        command_thread(company_info['机构简称'], list(set(pro_images_front)))
+
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name,
+                        '产品特点': None,
+                        '产品详情': None,
+                        '应用行业': company_info['pro_yy'],
+                        'pro_images_front': pro_images_front,
+                        'pro_images_back': pro_images_back,
+                        'status': 1
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('page=')[1])
+                if int(current_page) < 1:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.jinguan-cn.com":
+            try:
+                for item in soup.find_all('div', {'class': 'w-prd-list-cell'}):
+                    pro_name = item.find('div', {'class': 'w-prd-imgbox'}).get('title').strip()
+                    pro_link = 'http://www.jinguan-cn.com' + item.find_all('a')[0].get('href')
                     pro_data = {
                         'pro_link': pro_link,
                         'domain': domain,
@@ -724,18 +796,265 @@ def parse_list(company_info, html):
                         '产品链接': company_info['产品链接'],
                         '产品名称': pro_name
                     }
-                    print(pro_data)
-                    # MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('--')[1].split('.')[0])
+                if int(current_page) < 16:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('--')[0] + f'--{current_page + 1}.html'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.gdyuanchengsy.com":
+            try:
+                for info in soup.find_all('ul', {'class': 'cplbzs_ul'}):
+                    for item in info.find_all('li'):
+                        pro_name = item.find('span').get_text().strip()
+                        pro_link = 'http://www.gdyuanchengsy.com/' + item.find('a').get('href')
+                        pro_data = {
+                            'pro_link': pro_link,
+                            'domain': domain,
+                            '机构全称': company_info['机构全称'],
+                            '机构简称': company_info['机构简称'],
+                            '企业类型': company_info['企业类型'],
+                            '企业动态': company_info.get('企业动态'),
+                            '产品链接': company_info['产品链接'],
+                            '产品名称': pro_name
+                        }
+                        # print(pro_data)
+                        MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.leyouguandao.com":
+            try:
+                for item in soup.find('div', {'class': 'ny_pro_list'}).find_all('li'):
+                    pro_name = item.find('h3').get_text().strip()
+                    pro_link = item.find('a').get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.pvc123.com":
+            try:
+                for info in soup.find_all('div', {'class': 'main_body'}):
+                    for item in info.find_all('td'):
+                        pro_name = item.find_all('a')[-1].get_text().strip()
+                        pro_link = item.find_all('a')[-1].get('href')
+                        pro_data = {
+                            'pro_link': pro_link,
+                            'domain': domain,
+                            '机构全称': company_info['机构全称'],
+                            '机构简称': company_info['机构简称'],
+                            '企业类型': company_info['企业类型'],
+                            '企业动态': company_info.get('企业动态'),
+                            '产品链接': company_info['产品链接'],
+                            '产品名称': pro_name
+                        }
+                        # print(pro_data)
+                        MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.fjhoutiankeji.com":
+            try:
+                for item in soup.find('div', {'class': 'main pro_cp'}).find_all('li'):
+                    pro_name = item.find('p').get_text().strip()
+                    pro_link = 'http://www.fjhoutiankeji.com' + item.find_all('a')[-1].get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.dehanguan.com":
+            try:
+                for item in soup.find_all('div', {'class': 'wp-new-article-style-c'}):
+                    pro_name = item.find('a', {'class': 'productlistid memberoff'}).get_text().strip()
+                    pro_link = item.find('a', {'class': 'productlistid memberoff'}).get('href')
+                    pro_yy = item.find('p', {'class': 'category_p'}).get_text().strip()
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name,
+                        '应用行业': pro_yy
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
             except Exception as error:
                 log_err(error)
 
             try:
                 current_page = int(company_info['产品链接'].split('page=')[1])
-                if int(current_page) < 4:
+                if int(current_page) < 12:
                     link = company_info['产品链接']
                     company_info['产品链接'] = link.split('page=')[0] + f'page={current_page + 1}'
                     return product_list(company_info)
             except:
                 pass
+        if domain == "qzhhwfb.com":
+            try:
+                for item in soup.find_all('div', {'class': 'w-prd-list-cell'}):
+                    pro_name = item.find('div', {'class': 'w-prd-imgbox'}).get('title').strip()
+                    pro_link = 'http://qzhhwfb.com' + item.find('a').get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "msxbz.cn":
+            try:
+                for item in soup.find_all('div', {'class': 'w-prd-list-cell'}):
+                    pro_name = item.find('div', {'class': 'w-prd-imgbox'}).get('title').strip()
+                    pro_link = 'http://msxbz.cn' + item.find('a').get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.qzjtsj.cn":
+            try:
+                for item in soup.find('div', {'id': 'model_contant_main'}).find_all('li'):
+                    pro_name = item.find('strong').get_text().strip()
+                    pro_link = 'http://www.qzjtsj.cn' + item.find('a').get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+
+            try:
+                current_page = int(company_info['产品链接'].split('_')[1].split('.')[0])
+                if int(current_page) < 5:
+                    link = company_info['产品链接']
+                    company_info['产品链接'] = link.split('_')[0] + f'_{current_page + 1}.html'
+                    return product_list(company_info)
+            except:
+                pass
+        if domain == "www.fjlbgy.com":
+            try:
+                for item in soup.find_all('div', {'class': 'product-thumb product-wrapper'}):
+                    pro_name = item.find_all('a')[-1].get_text().strip()
+                    pro_link = 'http://www.fjlbgy.com' + item.find_all('a')[-1].get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.chinatkp.com":
+            try:
+                for item in soup.find_all('div', {'class': 'view'}):
+                    pro_name = item.find_all('a')[-1].get_text().strip()
+                    pro_link = 'http://www.chinatkp.com/piclist.asp' + item.find_all('a')[-1].get('href')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "www.jjxingtai.com":
+            try:
+                for item in soup.find('div', {'class': 'am-u-sm-12 am-u-md-12 am-u-lg-9'}).find_all('li'):
+                    pro_name = item.find('p').get_text().strip()
+                    pro_link = 'http://www.jjxingtai.com' + item.find('a').get('href').replace('..', '')
+                    pro_data = {
+                        'pro_link': pro_link,
+                        'domain': domain,
+                        '机构全称': company_info['机构全称'],
+                        '机构简称': company_info['机构简称'],
+                        '企业类型': company_info['企业类型'],
+                        '企业动态': company_info.get('企业动态'),
+                        '产品链接': company_info['产品链接'],
+                        '产品名称': pro_name
+                    }
+                    # print(pro_data)
+                    MongoPipeline('products').update_item({'pro_link': None}, pro_data)
+            except Exception as error:
+                log_err(error)
+        if domain == "lvshengpapercup.1688.com":
+            jsonData = json.load(open(r'D:\Projects\zyl_34\spiders\data.json', 'r', encoding="utf-8"))
+            for item in jsonData.get('data').get('content').get('offerList'):
+                pro_name = item.get('subject')
+                pro_link = f"https://detail.1688.com/offer/{item.get('id')}.html"
+                pro_data = {
+                    'pro_link': pro_link,
+                    'domain': domain,
+                    '机构简称': company_info['机构简称'],
+                    '企业类型': company_info['企业类型'],
+                    '企业动态': company_info.get('企业动态'),
+                    '产品链接': company_info['产品链接'],
+                    '产品名称': pro_name
+                }
+                # print(pro_data)
+                MongoPipeline('products').update_item({'pro_link': None}, pro_data)
     except Exception as error:
         log_err(error)

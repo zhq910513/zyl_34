@@ -65,19 +65,10 @@ def DownloadPicture_Video(img_path, img_url, retry=0):
             '.pdf') or img_url.endswith('.wbep'):
         try:
             headers = {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                'Accept-Encoding': 'gzip, deflate',
-                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-                'Cookie': 'ASPSESSIONIDSSBCDTSR=OMKHGDIDBPLPBEEAKDGHLCKM',
-                'Host': 'www.fjzhongya.com',
-                'Pragma': 'no-cache',
-                'Upgrade-Insecure-Requests': '1',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36'
             }
             res = requests.get(img_url, headers=headers, timeout=60)
-            if res.status_code == 200:
+            if res.status_code == 200 or res.status_code == 304:
                 basename = hashlib.md5(img_url.encode("utf8")).hexdigest() + '.' + img_url.split('.')[-1]
                 filename = os.path.join(img_path + '/' + basename)
                 with open(filename, "wb") as f:
