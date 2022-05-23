@@ -161,6 +161,7 @@ if __name__ == "__main__":
     # }
     # product_list(company_dict)
 
-    for pro_info in MongoPipeline('products').find({'status': None, "domain" : "lvshengpapercup.1688.com"}):
+    for pro_info in MongoPipeline('products').find({'status': None}):
         product_detail(pro_info)
+        # kill_chromedriver()
     #     break
